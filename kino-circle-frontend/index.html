@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Главная</title>
+</head>
+
+<body>
+    <header>
+        <h1>КиноСёркл</h1>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="index.html">Голосования</a></li>
+            <li><a href="profile.html">Профиль</a></li>
+            <li><a href="#" id="logoutLink">Выйти</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h2>Голосования</h2>
+        <div id="votingsList">
+            <!-- Список голосований будет здесь -->
+        </div>
+    </div>
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Проверка авторизации
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // Обработчик выхода
+            const logoutLink = document.getElementById('logoutLink');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    logout();
+                });
+            }
+
+            // Загрузка и отображение голосований
+            async function loadVotings() {
+                const votingsList = document.getElementById('votingsList');
+                votingsList.innerHTML = '<p>Загрузка голосований...</p>'; // Показываем индикатор загрузки
+
+                const votings = await getVotings();
+                if (votings) {
+                    votingsList.innerHTML = ''; // Очищаем индикатор загрузки
+
+                    if (votings.length === 0) {
+                        votingsList.innerHTML = '<p>Нет доступных голосований.</p>';
+                        return;
+                    }
+
+                    votings.forEach(voting => {
+                        const votingDiv = document.createElement('div');
+                        votingDiv.classList.add('movie');
+                        votingDiv.innerHTML = `
+                            <h3>${voting.title}</h3>
+                            <p>${voting.description || 'Нет описания'}</p>
+                            <a href="voting.html?id=${voting.id}">Подробнее</a>
+                        `;
+                        votingsList.appendChild(votingDiv);
+                    });
+                } else {
+                    votingsList.innerHTML = '<p>Ошибка при загрузке голосований.</p>';
+                }
+            }
+
+            await loadVotings();
+        });
+    </script>
+</body>
+
+</html>

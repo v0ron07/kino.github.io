@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Профиль</title>
+</head>
+
+<body>
+    <header>
+        <h1>Профиль</h1>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="index.html">Голосования</a></li>
+            <li><a href="profile.html">Профиль</a></li>
+            <li><a href="#" id="logoutLink">Выйти</a></li>
+        </ul>
+    </nav>
+    <div class="container">
+        <h2>Информация о пользователе</h2>
+        <div id="profileInfo">
+            <!-- Информация о профиле будет здесь -->
+        </div>
+    </div>
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Проверка авторизации
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // Обработчик выхода
+            const logoutLink = document.getElementById('logoutLink');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    logout();
+                });
+            }
+
+            // Загрузка и отображение информации о профиле
+            async function loadProfile() {
+                const profileInfo = document.getElementById('profileInfo');
+                profileInfo.innerHTML = '<p>Загрузка профиля...</p>';
+
+                const profile = await apiRequest('GET', '/users/profile', null, true);
+
+                if (profile) {
+                    profileInfo.innerHTML = `
+                        <p>Имя пользователя: ${profile.username}</p>
+                        <p>Email: ${profile.email || 'Не указан'}</p>
+                    `;
+                } else {
+                    profileInfo.innerHTML = '<p>Ошибка при загрузке профиля.</p>';
+                }
+            }
+
+            await loadProfile();
+        });
+    </script>
+</body>
+
+</html>

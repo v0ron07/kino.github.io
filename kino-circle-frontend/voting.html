@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Голосование</title>
+</head>
+
+<body>
+    <header>
+        <h1>Голосование</h1>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="index.html">Голосования</a></li>
+            <li><a href="profile.html">Профиль</a></li>
+            <li><a href="#" id="logoutLink">Выйти</a></li>
+        </ul>
+    </nav>
+    <div class="container">
+        <h2 id="votingTitle"></h2>
+        <p id="votingDescription"></p>
+        <div id="moviesList">
+            <!-- Список фильмов будет здесь -->
+        </div>
+
+        <form id="addMovieForm">
+            <div class="form-group">
+                <label for="movieTitle">Название фильма:</label>
+                <input type="text" id="movieTitle" name="movieTitle" required>
+            </div>
+            <button type="submit">Добавить фильм</button>
+            <div id="addMovieError" class="error"></div>
+        </form>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Проверка авторизации
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // Обработчик выхода
+            const logoutLink = document.getElementById('logoutLink');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    logout();
+                });
+            }
+
+            // Получение ID голосования из URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const votingId = urlParams.get('id');
+
+            if (!votingId) {
+                alert('ID голосования не указан.');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Загрузка и отображение информации о голосовании
+            async function loadVoting() {
+                const votingTitle = document.getElementById('votingTitle');
+                const votingDescription = document.getElementById('votingDescription');
+                const moviesList = document.getElementById('moviesList');
+                moviesList.innerHTML = '<p>Загрузка информации о голосовании...</p>';
+
+                const voting = await getVoting(votingId);
+
+                if (voting) {
+                    votingTitle.textContent = voting.title;
+                    votingDescription.textContent = voting.description || 'Нет описания';
+                    moviesList.innerHTML = '';
+
+                    if (voting.Movies && voting.Movies.length > 0) {
+                        voting.Movies.forEach(movie => {
+                            const movieDiv = document.createElement('div');
+                            movieDiv.classList.add('movie');
+                            movieDiv.innerHTML = `
+                                <h3>${movie.title}</h3>
+                                <p>Голосов: ${movie.votes}</p>
+                                <button class="voteButton" data-movie-id="${movie.id}">Проголосовать</button>
+                            `;
+                            moviesList.appendChild(movieDiv);
+
+                            const voteButton = movieDiv.querySelector('.voteButton');
+                            if (voteButton) {
+                                voteButton.addEventListener('click', async () => {
+                                    await voteForMovie(votingId, movie.id);
+                                    // После голосования перезагружаем информацию о голосовании
+                                    await loadVoting();
+                                });
+                            }
+                        });
+                    } else {
+                        moviesList.innerHTML = '<p>В этом голосовании пока нет фильмов.</p>';
+                    }
+                } else {
+                    moviesList.innerHTML = '<p>Ошибка при загрузке голосования.</p>';
+                }
+            }
+
+            // Обработка добавления фильма
+            const addMovieForm = document.getElementById('addMovieForm');
+            const addMovieError = document.getElementById('addMovieError');
+
+            addMovieForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const movieTitle = document.getElementById('movieTitle').value;
+
+                const success = await addMovieToVoting(votingId, movieTitle);
+
+                if (success) {
+                    // Очищаем поле ввода
+                    document.getElementById('movieTitle').value = '';
+                    await loadVoting();  // Обновляем список фильмов
+                } else {
+                    addMovieError.textContent = 'Ошибка при добавлении фильма.';
+                }
+            });
+
+            await loadVoting();
+        });
+    </script>
+</body>
+
+</html>
